@@ -1,0 +1,69 @@
+[package]
+name = "dla"
+description = "Diffusion Limited Aggregation Simulator in Rust."
+version = "0.1.0"
+edition = "2021"
+readme = "README.md"
+#rust-version = "1.64" # this sets the MINIMUM version
+
+#[lib] #don't need this now that I'm moving it to a package
+
+[profile.dev]
+opt-level = 1
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+lto = true # link time optimization
+opt-level = 3 # should be the default anyway
+
+strip = "debuginfo"
+
+# optimize dependencies for dev builds
+# this improves runtime and makes it so we can still debug
+[profile.dev.package."*"]
+opt-level = 3
+strip = "debuginfo"
+
+[dependencies]
+#wgpu = "0.14"
+
+winit = "0.27"
+winit_input_helper = "0.13"
+
+log = "0.4"
+env_logger = "0.10"
+
+randomize = "3.0"
+byteorder = "1.4"
+getrandom = "0.2"
+pixels = "0.11.0"
+rand = "0.8"
+thousands= "0.2"
+clap = { version = "4.0.13", features = ["derive"] }
+serde = { version = "1.0.145", features = ["derive"]}
+bincode = "1.2.1"
+colored = "2.0.0"
+
+strum = "*"
+strum_macros = "*"
+
+egui = "0.20"
+egui-wgpu = "0.20"
+egui-winit = { version = "0.20", default-features = false, features = ["links"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+console_log = "0.2"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["GpuTextureFormat"] }
+wgpu = { version = "0.14", features = ["webgl"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.10"
+pollster = "0.2"
+
+[workspace] 
+members = [
+    "run-wasm"
+]

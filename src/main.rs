@@ -3,7 +3,7 @@ mod dla;
 pub mod colors;
 pub mod config;
 pub mod grid;
-use dla::DlaGrid;
+use dla::Dla;
 
 use winit::{
     dpi::LogicalSize,
@@ -38,10 +38,9 @@ fn main() {
 }
 
 async fn run() {
-    let sim: DlaGrid = DlaGrid::default();
+    let sim: Dla = Dla::default();
     let scale_factor = 1.25;
-    let width = sim.grid.width as u32;
-    let height = sim.grid.height as u32;
+    let (width, height) = sim.size();
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -112,7 +111,7 @@ async fn run() {
         let window_size = window.inner_size();
         let scale_factor = window.scale_factor() as f32;
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, window.as_ref());
-        let pixels = Pixels::new_async(width, height, surface_texture)
+        let pixels = Pixels::new_async(width as u32, height as u32, surface_texture)
             .await
             .expect("Pixels error");
         let framework = Framework::new(
@@ -129,7 +128,7 @@ async fn run() {
     // use worker thread on native
     #[cfg(not(target_arch = "wasm32"))]
     {
-        DlaGrid::spawn_worker_thread(&event_loop_grid);
+        Dla::spawn_worker_thread(&event_loop_grid);
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -150,9 +149,9 @@ async fn run() {
             // egui resizing
             if let Some(size) = input.window_resized() {
                 let guard = event_loop_grid.lock().unwrap();
-                let (grid_width, grid_height) = (guard.grid.width as u32, guard.grid.height as u32);
+                let (grid_width, grid_height) = guard.size();
                 std::mem::drop(guard);
-                if size.width < grid_width || size.height < grid_height {
+                if size.width < grid_width as u32 || size.height < grid_height as u32 {
                     // There aren't enough pixels to resize the grid
                     // This would result in grid square size of < 1 pixel, which isn't possible (?)
                     debug!("Can't resize grid to ({} x{}), ignoring", size.width, size.height);
@@ -171,8 +170,11 @@ async fn run() {
             #[cfg(target_arch = "wasm32")]
             {
                 let mut guard = event_loop_grid.lock().unwrap();
-                if !guard.paused && !guard.is_complete {
-                    for _ in 0..80000 {
+                if !guard.paused() && !guard.complete() {
+                    // 80,000 is a number that worked well on my HW to balance locking
+                    // access and responsiveness of the UI within reason. Essentially this
+                    // is saying we'd like 80,000 updates between redraws of the UI
+                    for _ in 0..80_000 {
                         guard.update();
                     }
                 }
@@ -190,16 +192,15 @@ async fn run() {
             Event::RedrawRequested(_) => {
                 // pass in a pixels frame mutably. Modify it to produce the next frame
                 let guard_grid = event_loop_grid.lock().unwrap();
-                let need_resize = guard_grid.do_resize;
+                let need_resize = guard_grid.do_resize();
                 std::mem::drop(guard_grid);
 
                 if need_resize {
                     debug!("Resize needed. Updating winit, pixels, and egui framework");
                     // special resize handling
                     let mut guard_grid = event_loop_grid.lock().unwrap();
-                    guard_grid.do_resize = false;
-                    let width = guard_grid.grid.width as u32;
-                    let height = guard_grid.grid.height as u32;
+                    guard_grid.set_do_resize(false);
+                    let (width, height) = guard_grid.size();
                     std::mem::drop(guard_grid);
 
                     let size = LogicalSize::new(width as f64, height as f64);
@@ -215,7 +216,7 @@ async fn run() {
                     // TWO parts of pixels need to be updated:
                     // 1. The size of the buffer itself (we changed grid size)
                     // 2. The size of the surface on top of which its renedered (relevant b/c window size changed)
-                    if let Err(err) = pixels.resize_buffer(width, height) {
+                    if let Err(err) = pixels.resize_buffer(width as u32, height as u32) {
                         error!("pixels.resize_buffer() failed: {err}");
                         *control_flow = ControlFlow::Exit;
                         return;

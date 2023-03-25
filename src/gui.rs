@@ -9,7 +9,7 @@ use core::ops::RangeInclusive;
 
 use crate::config::GridType;
 use crate::colors::{ColorName, Theme};
-use crate::DlaGrid;
+use crate::Dla;
 use crate::dla::{DEFAULT_BACK_CLR, DEFAULT_PART_CLR, DEFAULT_THEME};
 
 /// Manages all state required for rendering egui over `Pixels`.
@@ -56,7 +56,7 @@ struct Gui {
 
     // We have r/w access to the grid directly, so that we can just tell it how to update stuff in response to
     // certain gui changes
-    arc: Arc<Mutex<DlaGrid>>,
+    arc: Arc<Mutex<Dla>>,
 
     // user can change the grid size in the gui. This is separate from width/height since those are the actual current
     // backend dimensions that are used for other calculations. Maybe I could just make them the same, since it would be
@@ -86,7 +86,7 @@ impl Framework {
         height: u32,
         scale_factor: f32,
         pixels: &pixels::Pixels,
-        arc: Arc<Mutex<DlaGrid>>,
+        arc: Arc<Mutex<Dla>>,
     ) -> Self {
         let max_texture_size = pixels.device().limits().max_texture_dimension_2d as usize;
 
@@ -200,7 +200,7 @@ impl Gui {
     /// Create a `Gui`.
     /// Pass in an arc mutex to the simulation grid. This is used to synchronize data access/display,
     /// as the data needs to be shared between the display and computation thread
-    fn new(arc: Arc<Mutex<DlaGrid>>) -> Self {
+    fn new(arc: Arc<Mutex<Dla>>) -> Self {
         Self {
             window_open: true,
             about_open: true,

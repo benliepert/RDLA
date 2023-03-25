@@ -27,8 +27,8 @@ struct Particle {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct DlaGrid {
-    pub grid: Grid, // separated out so we can serialize it independently
+pub(crate) struct Dla {
+    grid: Grid, // separated out so we can serialize it independently
     // We need to track the currently moving particle in the grid
     /// Each update will either move this particle, or spawn a new one (if the last move stuck it)
     cur_part: Particle,
@@ -39,7 +39,7 @@ pub(crate) struct DlaGrid {
     /// it's done or not in the class, so you don't have to worry about max > get_stuck() or max >= get_stuck(), where
     /// one will hang since there's protection in update against hogging the cpu indefinitely when max particles
     /// is reached
-    pub is_complete: bool,
+    is_complete: bool,
     /// The number of particles the simulation will use
     particles: usize,
     /// Track the total number of particle moves the simulation did. Useful for benchmarking
@@ -49,7 +49,7 @@ pub(crate) struct DlaGrid {
     /// Color for unfilled cells when displayed
     empty_color: Color,
     /// Is the simulation paused? This is separate from is_complete. Both won't be true at the same time
-    pub paused: bool,
+    paused: bool,
     /// Style of the initial starting grid
     grid_type: GridType,
     /// Minimum particle spawn distance from center of grid.
@@ -59,12 +59,12 @@ pub(crate) struct DlaGrid {
     spawn_radius: Option<usize>,
     /// When the grid size is changed in the gui, track that a resize is required so that the event loop can
     /// take care of it when it loops back around.
-    pub do_resize: bool,
+    do_resize: bool,
 
     theme: Option<Theme>,
 }
 
-impl Default for DlaGrid {
+impl Default for Dla {
     fn default() -> Self {
         let (width, height) = (400, 400);
         let grid_type = GridType::Center;
@@ -88,7 +88,7 @@ impl Default for DlaGrid {
     }
 }
 
-impl DlaGrid {
+impl Dla {
     pub(crate) fn from(config: &DlaConfig) -> Self {
         let width: u32 = config.width; // has a default
 
@@ -393,7 +393,7 @@ impl DlaGrid {
         let iterations = 10;
         let mut updates_vec = Vec::new();
         for i in 0..iterations {
-            let mut sim = DlaGrid::from(&Default::default());
+            let mut sim = Dla::from(&Default::default());
             let now = std::time::Instant::now();
             sim.run();
             let elapsed = now.elapsed().as_secs();
@@ -416,13 +416,10 @@ impl DlaGrid {
         );
     }
 
-    pub fn spawn_worker_thread(shared_data: &Arc<Mutex<DlaGrid>>) {
+    pub fn spawn_worker_thread(shared_data: &Arc<Mutex<Dla>>) {
         debug!("worker thread spawning");
         let run_thread_grid = Arc::clone(&shared_data);
         let _handle = thread::spawn(move || {
-            //let guard_data = run_thread_grid.lock().unwrap();
-            //std::mem::drop(guard_data);
-
             loop {
                 let mut guard_data = run_thread_grid.lock().unwrap();
                 if !guard_data.paused && !guard_data.is_complete{
@@ -444,7 +441,15 @@ impl DlaGrid {
         });
     }
 
-    // ----- FRAMEWORK (egui) HELPER FUNCTIONS -----
+    // ----- FRAMEWORK (egui) & EVENT LOOP (main) HELPER FUNCTIONS -----
+    pub fn do_resize(&self) -> bool {
+        self.do_resize
+    }
+
+    pub fn set_do_resize(&mut self, set: bool) {
+        self.do_resize = set;
+    }
+
     pub fn paused(&self) -> bool {
         self.paused
     }

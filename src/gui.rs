@@ -275,7 +275,7 @@ impl Gui {
                 ui.add_enabled_ui(self.paused || self.complete,|ui| {
                     ui.horizontal(|ui| {
                         ui.label("Grid Type:");
-                        egui::ComboBox::from_label("")
+                        egui::ComboBox::from_id_source("grid-type")
                             .selected_text(format!("{}", self.grid_type))
                             .show_ui(ui, |ui| {
                                 // TODO: could just set paused in here to avoid keeping the simulation in sync
@@ -304,9 +304,7 @@ impl Gui {
                                 });    
                         }
                         ui.add_enabled_ui(self.time_coloring, |ui| {
-                            // NOTE: the label for this combobox is a hack since the label must be unique, but I want these 3
-                            // combo boxes to have an empty label. I should learn how to use from_id_source()
-                            egui::ComboBox::from_label("")
+                            egui::ComboBox::from_id_source("theme")
                                 .selected_text(format!("{}", self.theme))
                                 .show_ui(ui, |ui| {
                                     let cur_theme = self.theme;
@@ -325,9 +323,7 @@ impl Gui {
                     ui.horizontal(|ui| {
                         ui.add_enabled_ui(!self.time_coloring, |ui| {
                             ui.label("Particle:        ");
-                            // NOTE: the label for this combobox is a hack since the label must be unique, but I want these 3
-                            // combo boxes to have an empty label. I should learn how to use from_id_source()
-                            egui::ComboBox::from_label("  ")
+                            egui::ComboBox::from_id_source("particle-color")
                                 .selected_text(format!("{}", self.particle_color))
                                 .show_ui(ui, |ui| {
                                     let cur_part_color = self.particle_color;
@@ -345,9 +341,7 @@ impl Gui {
 
                     ui.horizontal(|ui| {
                         ui.label("Background:");
-                        // NOTE: the label for this combobox is a hack since the label must be unique, but I want these 3
-                        // combo boxes to have an empty label. I should learn how to use from_id_source()
-                        egui::ComboBox::from_label("   ")
+                        egui::ComboBox::from_id_source("background-color")
                             .selected_text(format!("{}", self.background_color))
                             .show_ui(ui, |ui| {
                                 let cur_back_color = self.background_color;

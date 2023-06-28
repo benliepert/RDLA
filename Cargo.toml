@@ -67,3 +67,6 @@ pollster = "0.2"
 members = [
     "run-wasm"
 ]
+
+[package.metadata.web]
+template = "index.html.template"

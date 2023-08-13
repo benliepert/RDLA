@@ -1,21 +1,20 @@
-
-mod dla;
 pub mod colors;
 pub mod config;
+mod dla;
 pub mod grid;
 use dla::Dla;
 
+use log::{debug, error};
+use pixels::{Pixels, SurfaceTexture};
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use winit::{
     dpi::LogicalSize,
-    event_loop::{ControlFlow, EventLoop},
     event::{Event, VirtualKeyCode},
+    event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use pixels::{Pixels, SurfaceTexture};
 use winit_input_helper::WinitInputHelper;
-use std::sync::{Arc, Mutex};
-use std::rc::Rc;
-use log::{debug, error};
 
 use crate::gui::Framework;
 mod gui;
@@ -46,7 +45,8 @@ async fn run() {
     let mut input = WinitInputHelper::new();
     let window = {
         let size = LogicalSize::new(width as f64, height as f64);
-        let scaled_size = LogicalSize::new(width as f64 * scale_factor, height as f64 * scale_factor);
+        let scaled_size =
+            LogicalSize::new(width as f64 * scale_factor, height as f64 * scale_factor);
         WindowBuilder::new()
             .with_title("DLA in Rust")
             .with_inner_size(scaled_size)
@@ -110,7 +110,8 @@ async fn run() {
     let (mut pixels, mut framework) = {
         let window_size = window.inner_size();
         let scale_factor = window.scale_factor() as f32;
-        let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, window.as_ref());
+        let surface_texture =
+            SurfaceTexture::new(window_size.width, window_size.height, window.as_ref());
         let pixels = Pixels::new_async(width as u32, height as u32, surface_texture)
             .await
             .expect("Pixels error");
@@ -133,7 +134,6 @@ async fn run() {
 
     event_loop.run(move |event, _, control_flow| {
         if input.update(&event) {
-
             if input.key_released(VirtualKeyCode::Escape) || input.quit() {
                 debug!("Quit signal received. Exiting...");
                 *control_flow = ControlFlow::Exit;
@@ -154,7 +154,10 @@ async fn run() {
                 if size.width < grid_width as u32 || size.height < grid_height as u32 {
                     // There aren't enough pixels to resize the grid
                     // This would result in grid square size of < 1 pixel, which isn't possible (?)
-                    debug!("Can't resize grid to ({} x{}), ignoring", size.width, size.height);
+                    debug!(
+                        "Can't resize grid to ({} x{}), ignoring",
+                        size.width, size.height
+                    );
                 } else {
                     debug!("Resizing framework & pixels surface. Size is {size:?}");
                     if let Err(err) = pixels.resize_surface(size.width, size.height) {
@@ -204,7 +207,8 @@ async fn run() {
                     std::mem::drop(guard_grid);
 
                     let size = LogicalSize::new(width as f64, height as f64);
-                    let scaled_size = LogicalSize::new(width as f64 * scale_factor, height as f64 * scale_factor);
+                    let scaled_size =
+                        LogicalSize::new(width as f64 * scale_factor, height as f64 * scale_factor);
 
                     // update the window size to fit the new grid size the same way as when it's init'd outside the
                     // event loop

@@ -1,16 +1,16 @@
-use egui::{ClippedPrimitive, Context, TexturesDelta, FullOutput};
+use core::ops::RangeInclusive;
+use egui::{ClippedPrimitive, Context, FullOutput, TexturesDelta};
 use egui_wgpu::renderer::{Renderer, ScreenDescriptor};
 use pixels::{wgpu, PixelsContext};
+use std::sync::{Arc, Mutex};
+use strum::IntoEnumIterator;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
-use strum::IntoEnumIterator;
-use std::sync::{Arc, Mutex};
-use core::ops::RangeInclusive;
 
-use crate::config::GridType;
 use crate::colors::{ColorName, Theme};
-use crate::Dla;
+use crate::config::GridType;
 use crate::dla::{DEFAULT_BACK_CLR, DEFAULT_PART_CLR, DEFAULT_THEME};
+use crate::Dla;
 
 /// Manages all state required for rendering egui over `Pixels`.
 pub(crate) struct Framework {
@@ -49,7 +49,7 @@ struct Gui {
     from_file: String,
 
     particle_color: ColorName,
-    background_color: ColorName, 
+    background_color: ColorName,
 
     spawn_radius: usize,
     enable_spawn_radius: bool,
@@ -168,7 +168,7 @@ impl Framework {
             &self.paint_jobs,
             &self.screen_descriptor,
         );
-        
+
         // Render egui with WGPU
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -220,7 +220,7 @@ impl Gui {
             selected_width: 400,
             selected_height: 400,
             time_coloring: true,
-            arc: arc,
+            arc,
             theme: DEFAULT_THEME,
         }
     }
@@ -242,7 +242,6 @@ impl Gui {
             });
         });
 
-
         egui::Window::new("About")
             .open(&mut self.about_open)
             .show(ctx, |ui| {
@@ -256,8 +255,7 @@ impl Gui {
         egui::Window::new("Control Panel")
             .open(&mut self.window_open)
             .show(ctx, |ui| {
-
-                // Grab everythign we need from the backend 
+                // Grab everythign we need from the backend
                 match self.arc.lock() {
                     Ok(guard) => {
                         self.paused = guard.paused();
@@ -265,14 +263,14 @@ impl Gui {
                         self.complete = guard.complete();
                         self.grid_type = guard.grid_type();
                         (self.width, self.height) = guard.size();
-                    },
+                    }
                     Err(poisoned) => {
                         panic!("Poisoned lock! ({})", poisoned);
                     }
                 };
 
                 // COMBO BOX grid type ---------------------
-                ui.add_enabled_ui(self.paused || self.complete,|ui| {
+                ui.add_enabled_ui(self.paused || self.complete, |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Grid Type:");
                         egui::ComboBox::from_id_source("grid-type")
@@ -282,26 +280,37 @@ impl Gui {
                                 let cur_grid_type = self.grid_type;
                                 // add a value for every grid type, thanks scrum :)
                                 for grid_type in GridType::iter() {
-                                    ui.selectable_value(&mut self.grid_type, grid_type, grid_type.to_string());
+                                    ui.selectable_value(
+                                        &mut self.grid_type,
+                                        grid_type,
+                                        grid_type.to_string(),
+                                    );
                                 }
                                 if cur_grid_type != self.grid_type {
                                     // selection changed
-                                    self.arc.lock().unwrap().handle_grid_type_selected(self.grid_type);
+                                    self.arc
+                                        .lock()
+                                        .unwrap()
+                                        .handle_grid_type_selected(self.grid_type);
                                 }
-                        });
+                            });
                     });
                 });
                 ui.collapsing("Colors", |ui| {
                     ui.horizontal(|ui| {
-                        if ui.checkbox(&mut self.time_coloring, "Theme:   ")
+                        if ui
+                            .checkbox(&mut self.time_coloring, "Theme:   ")
                             .on_hover_text("Particle color is based on when it stuck")
-                            .clicked() {
-                            self.arc.lock().unwrap().handle_theme_changed(
-                                if self.time_coloring {
+                            .clicked()
+                        {
+                            self.arc
+                                .lock()
+                                .unwrap()
+                                .handle_theme_changed(if self.time_coloring {
                                     Some(self.theme)
                                 } else {
                                     None
-                                });    
+                                });
                         }
                         ui.add_enabled_ui(self.time_coloring, |ui| {
                             egui::ComboBox::from_id_source("theme")
@@ -310,13 +319,20 @@ impl Gui {
                                     let cur_theme = self.theme;
                                     // add a value for every color, thanks scrum :)
                                     for theme in Theme::iter() {
-                                        ui.selectable_value(&mut self.theme, theme, theme.to_string());
+                                        ui.selectable_value(
+                                            &mut self.theme,
+                                            theme,
+                                            theme.to_string(),
+                                        );
                                     }
                                     if cur_theme != self.theme {
                                         // selection changed
-                                        self.arc.lock().unwrap().handle_theme_changed(Some(self.theme));
+                                        self.arc
+                                            .lock()
+                                            .unwrap()
+                                            .handle_theme_changed(Some(self.theme));
                                     }
-                            });
+                                });
                         });
                     });
 
@@ -329,13 +345,20 @@ impl Gui {
                                     let cur_part_color = self.particle_color;
                                     // add a value for every color, thanks scrum :)
                                     for color in ColorName::iter() {
-                                        ui.selectable_value(&mut self.particle_color, color, color.to_string());
+                                        ui.selectable_value(
+                                            &mut self.particle_color,
+                                            color,
+                                            color.to_string(),
+                                        );
                                     }
                                     if cur_part_color != self.particle_color {
                                         // selection changed
-                                        self.arc.lock().unwrap().handle_particle_color_changed(self.particle_color);
+                                        self.arc
+                                            .lock()
+                                            .unwrap()
+                                            .handle_particle_color_changed(self.particle_color);
                                     }
-                            });
+                                });
                         });
                     });
 
@@ -347,13 +370,20 @@ impl Gui {
                                 let cur_back_color = self.background_color;
                                 // add a value for every color, thanks scrum :)
                                 for color in ColorName::iter() {
-                                    ui.selectable_value(&mut self.background_color, color, color.to_string());
+                                    ui.selectable_value(
+                                        &mut self.background_color,
+                                        color,
+                                        color.to_string(),
+                                    );
                                 }
                                 if cur_back_color != self.background_color {
                                     // selection changed
-                                    self.arc.lock().unwrap().handle_background_color_changed(self.background_color);
+                                    self.arc
+                                        .lock()
+                                        .unwrap()
+                                        .handle_background_color_changed(self.background_color);
                                 }
-                        });
+                            });
                     });
                 });
 
@@ -363,29 +393,40 @@ impl Gui {
                     ui.add_enabled_ui(self.paused || self.complete, |ui| {
                         let min_grid_size = 400;
                         let max_grid_size = 1200;
-                        ui.add(egui::DragValue::new(&mut self.selected_width)
-                            .speed(50)
-                            .clamp_range(RangeInclusive::new(min_grid_size, max_grid_size)));
+                        ui.add(
+                            egui::DragValue::new(&mut self.selected_width)
+                                .speed(50)
+                                .clamp_range(RangeInclusive::new(min_grid_size, max_grid_size)),
+                        );
                     });
                     ui.label("x");
                     ui.add_enabled_ui(self.paused || self.complete, |ui| {
                         let min_grid_size = 400;
                         let max_grid_size = 1200;
-                        ui.add(egui::DragValue::new(&mut self.selected_height)
-                            .speed(50)
-                            .clamp_range(RangeInclusive::new(min_grid_size, max_grid_size)));
+                        ui.add(
+                            egui::DragValue::new(&mut self.selected_height)
+                                .speed(50)
+                                .clamp_range(RangeInclusive::new(min_grid_size, max_grid_size)),
+                        );
                     });
 
                     // enable apply button if we're not running and the selected size is different than that
                     // of the currently loaded grid
-                    let enable_apply_button = self.selected_width != self.width as u32 
-                                                    || self.selected_height != self.height as u32 
-                                                    && (self.paused || self.complete);
+                    let enable_apply_button = self.selected_width != self.width as u32
+                        || self.selected_height != self.height as u32
+                            && (self.paused || self.complete);
                     ui.add_enabled_ui(enable_apply_button, |ui| {
-                        if ui.button("Apply")
-                                .on_hover_text("Apply the specified grid size. This will reset the grid.")
-                                .clicked() {
-                            self.arc.lock().unwrap().handle_reset(self.selected_width, self.selected_height);
+                        if ui
+                            .button("Apply")
+                            .on_hover_text(
+                                "Apply the specified grid size. This will reset the grid.",
+                            )
+                            .clicked()
+                        {
+                            self.arc
+                                .lock()
+                                .unwrap()
+                                .handle_reset(self.selected_width, self.selected_height);
                         }
                     });
                 });
@@ -399,31 +440,46 @@ impl Gui {
                         let start_particle_range = self.stuck_particles;
                         let end_particle_range = self.width as f32 * self.height as f32 * 0.90;
                         let old_particles = self.particles;
-                        ui.add(egui::DragValue::new(&mut self.particles)
-                            .speed(250)
-                            .clamp_range(RangeInclusive::new(start_particle_range, end_particle_range as usize)));
+                        ui.add(
+                            egui::DragValue::new(&mut self.particles)
+                                .speed(250)
+                                .clamp_range(RangeInclusive::new(
+                                    start_particle_range,
+                                    end_particle_range as usize,
+                                )),
+                        );
                         if old_particles != self.particles {
                             // Max particles updated
-                            self.arc.lock().unwrap().handle_particles_changed(self.particles);
+                            self.arc
+                                .lock()
+                                .unwrap()
+                                .handle_particles_changed(self.particles);
                         }
                     });
 
                     let old_enable_spawn_radius = self.enable_spawn_radius;
                     ui.checkbox(&mut self.enable_spawn_radius, "Spawn Radius:")
                         .on_hover_text("Particles will spawn at least this far from the center");
-                    ui.add_enabled_ui( self.enable_spawn_radius, |ui| {
+                    ui.add_enabled_ui(self.enable_spawn_radius, |ui| {
                         let start_radius = 0;
                         let end_radius = std::cmp::min(self.width, self.height) / 2;
                         let old_spawn_radius = self.spawn_radius;
-                        ui.add(egui::DragValue::new(&mut self.spawn_radius)
-                            .speed(20)
-                            .clamp_range(RangeInclusive::new(start_radius, end_radius)));
+                        ui.add(
+                            egui::DragValue::new(&mut self.spawn_radius)
+                                .speed(20)
+                                .clamp_range(RangeInclusive::new(start_radius, end_radius)),
+                        );
                         if old_spawn_radius != self.spawn_radius {
                             // spawn radius updated
-                            self.arc.lock().unwrap().handle_spawn_radius_changed(Some(self.spawn_radius));
+                            self.arc
+                                .lock()
+                                .unwrap()
+                                .handle_spawn_radius_changed(Some(self.spawn_radius));
                         }
                     });
-                    if old_enable_spawn_radius != self.enable_spawn_radius && !self.enable_spawn_radius{
+                    if old_enable_spawn_radius != self.enable_spawn_radius
+                        && !self.enable_spawn_radius
+                    {
                         // if it changed, and now it's off, tell the backend to not use a radius anymore
                         self.arc.lock().unwrap().handle_spawn_radius_changed(None);
                     }
@@ -431,20 +487,29 @@ impl Gui {
 
                 ui.horizontal(|ui| {
                     // PAUSE/RESET BUTTON ------------------
-                    ui.add_enabled_ui(!self.complete && self.stuck_particles < self.particles, |ui| {
-                        let button_text = if self.paused {
-                            UNPAUSE_BUTTON_TEXT
-                        } else {
-                            PAUSE_BUTTON_TEXT
-                        };
-                        if ui.button(button_text).clicked() {
-                            self.paused = !self.paused;
-                            self.arc.lock().unwrap().handle_pause_button_clicked(button_text);
-                        }
-                    });
+                    ui.add_enabled_ui(
+                        !self.complete && self.stuck_particles < self.particles,
+                        |ui| {
+                            let button_text = if self.paused {
+                                UNPAUSE_BUTTON_TEXT
+                            } else {
+                                PAUSE_BUTTON_TEXT
+                            };
+                            if ui.button(button_text).clicked() {
+                                self.paused = !self.paused;
+                                self.arc
+                                    .lock()
+                                    .unwrap()
+                                    .handle_pause_button_clicked(button_text);
+                            }
+                        },
+                    );
                     if ui.button(RESET_BUTTON_TEXT).clicked() {
                         self.paused = true; // auto pause on reset
-                        self.arc.lock().unwrap().handle_reset(self.selected_width, self.selected_height);
+                        self.arc
+                            .lock()
+                            .unwrap()
+                            .handle_reset(self.selected_width, self.selected_height);
                     }
 
                     // import/export is not supported on web yet
@@ -459,7 +524,10 @@ impl Gui {
 
                                 if ui.button(SAVE_BUTTON_TEXT).clicked() {
                                     // do nothing
-                                    self.arc.lock().unwrap().handle_save_button_clicked(&self.to_file);
+                                    self.arc
+                                        .lock()
+                                        .unwrap()
+                                        .handle_save_button_clicked(&self.to_file);
                                 }
                             });
                             ui.separator();
@@ -469,7 +537,10 @@ impl Gui {
 
                                 if ui.button(FROM_BUTTON_TEXT).clicked() {
                                     // The backend will update particles/stuck particles accordingly
-                                    self.arc.lock().unwrap().handle_from_button_clicked(&self.from_file);
+                                    self.arc
+                                        .lock()
+                                        .unwrap()
+                                        .handle_from_button_clicked(&self.from_file);
                                 }
                             });
                             ui.separator();
@@ -479,8 +550,7 @@ impl Gui {
 
                 // PROGRESS BAR ------------------
                 let progress: f32 = self.stuck_particles as f32 / self.particles as f32;
-                let progress_bar = egui::ProgressBar::new(progress)
-                    .show_percentage();
+                let progress_bar = egui::ProgressBar::new(progress).show_percentage();
                 ui.add(progress_bar);
             });
     }

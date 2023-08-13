@@ -64,12 +64,12 @@ pub struct DlaConfig {
     #[arg(short, long, default_value_t = false)]
     pub benchmark: bool,
 
-    /// How you'd like to view the simulation. Options are: 
+    /// How you'd like to view the simulation. Options are:
     /// Live (default): watch particles stick in real time
     /// End: Simulate in the background, then show the window at the end (slightly faster)
     /// Skip: Don't show the display at all
     #[arg(long, short)]
-    pub view: Option<String>
+    pub view: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, EnumIter)]
@@ -91,12 +91,12 @@ pub enum GridType {
 impl std::fmt::Display for GridType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            GridType::Center     => write!(f, "Center"),
+            GridType::Center => write!(f, "Center"),
             GridType::BottomEdge => write!(f, "Bottom Edge"),
-            GridType::AllEdges   => write!(f, "All Edges"),
-            GridType::FourDots   => write!(f, "Four Dots"),
-            GridType::RandFive   => write!(f, "Random Five"),
-            GridType::Circle     => write!(f, "Circle"),
+            GridType::AllEdges => write!(f, "All Edges"),
+            GridType::FourDots => write!(f, "Four Dots"),
+            GridType::RandFive => write!(f, "Random Five"),
+            GridType::Circle => write!(f, "Circle"),
         }
     }
 }
@@ -122,7 +122,8 @@ pub enum ColorStyle {
 impl Default for DlaConfig {
     fn default() -> Self {
         // This is the config used for benchmarking
-        DlaConfig { width: 400,
+        DlaConfig {
+            width: 400,
             height: None,
             scale_factor: 1.0, // meta argument
             particles: 10_000,
@@ -139,7 +140,6 @@ impl Default for DlaConfig {
 }
 
 impl DlaConfig {
-
     pub fn view(&self) -> View {
         // if a from file is specified, use View::End so that DlaGrid::Show doesn't generate on top of the grid
         if self.from_file.is_some() {
@@ -151,7 +151,7 @@ impl DlaConfig {
             match view_type.to_ascii_lowercase().as_str() {
                 "end" => View::End,
                 "skip" => View::Skip,
-                _      => default_view, 
+                _ => default_view,
             }
         } else {
             default_view
@@ -165,9 +165,9 @@ impl DlaConfig {
         if let Some(grid_type) = &self.grid_type {
             match grid_type.to_ascii_lowercase().as_str() {
                 "bottomedge" => GridType::BottomEdge,
-                "alledges"   => GridType::AllEdges,
-                "fourdots"   => GridType::FourDots,
-                _            => default_grid_type,
+                "alledges" => GridType::AllEdges,
+                "fourdots" => GridType::FourDots,
+                _ => default_grid_type,
             }
         } else {
             default_grid_type
@@ -179,7 +179,7 @@ impl DlaConfig {
         if let Some(style) = &self.color_style {
             match style.to_ascii_lowercase().as_str() {
                 "sparkle" => ColorStyle::Sparkle,
-                _         => DEFAULT
+                _ => DEFAULT,
             }
         } else {
             DEFAULT

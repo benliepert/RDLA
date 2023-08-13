@@ -1,15 +1,15 @@
-use core::time;
-use std::io::Write;
-use rand::{Rng, thread_rng};
-use thousands::Separable;
 use crate::config::{DlaConfig, GridType};
-use colored::Colorize;
 use crate::grid::Grid;
+use colored::Colorize;
+use core::time;
+use rand::{thread_rng, Rng};
+use std::io::Write;
+use thousands::Separable;
 
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use crate::colors::{Color, ColorName, Theme, get_gradients};
+use crate::colors::{get_gradients, Color, ColorName, Theme};
 use crate::gui::{PAUSE_BUTTON_TEXT, UNPAUSE_BUTTON_TEXT};
 
 // so the gui can stay in sync
@@ -71,16 +71,19 @@ impl Default for Dla {
         let grid = Grid::from(grid_type, width, height);
         let stuck_particles = grid.stuck_particles();
         Self {
-            grid: grid, 
-            cur_part: Particle { exists: false, pos: (0, 0)},
-            stuck_particles: stuck_particles,
+            grid,
+            cur_part: Particle {
+                exists: false,
+                pos: (0, 0),
+            },
+            stuck_particles,
             is_complete: false,
             particles: 10000,
             updates: 0,
             fill_color: DEFAULT_PART_CLR.get_color(),
             empty_color: DEFAULT_BACK_CLR.get_color(),
             paused: true,
-            grid_type: grid_type,
+            grid_type,
             spawn_radius: None,
             do_resize: false,
             theme: Some(DEFAULT_THEME),
@@ -112,16 +115,19 @@ impl Dla {
         let stuck_particles = grid.stuck_particles();
 
         Self {
-            grid: grid,
-            cur_part: Particle { exists: false, pos: (0, 0)},
-            stuck_particles: stuck_particles,
+            grid,
+            cur_part: Particle {
+                exists: false,
+                pos: (0, 0),
+            },
+            stuck_particles,
             is_complete: false,
             particles: config.particles,
             updates: 0,
             fill_color: color,
             empty_color: background_color,
             paused: true,
-            grid_type: grid_type,
+            grid_type,
             spawn_radius: None,
             do_resize: false,
             theme: Some(DEFAULT_THEME),
@@ -130,7 +136,7 @@ impl Dla {
 
     /// Run the simulation until all particles have stuck
     pub fn run(&mut self) {
-        while !self.is_complete{
+        while !self.is_complete {
             self.update();
         }
     }
@@ -141,14 +147,17 @@ impl Dla {
         let new_grid: Grid = Grid::from(new_grid_type, width, height);
 
         self.grid = new_grid;
-        self.cur_part = Particle { exists: false, pos: (0, 0)}; // reset
+        self.cur_part = Particle {
+            exists: false,
+            pos: (0, 0),
+        }; // reset
         self.stuck_particles = self.grid.stuck_particles();
         self.is_complete = false; // reset
-        // particles same
+                                  // particles same
         self.updates = 0; // reset
-        // fill color same
-        // empty color same
-        // to_file same
+                          // fill color same
+                          // empty color same
+                          // to_file same
         self.paused = true; // make them restart with the new grid
         self.grid_type = new_grid_type;
     }
@@ -162,7 +171,7 @@ impl Dla {
     }
 
     /// Returns a boolean representing whether a particle at (x, y) should 'stick'
-    /// 
+    ///
     /// In DLA, a particle sticks if one of its neighbors is also a particle. Particles
     /// stick to one another. Return true if one of the neighbors of (x, y) is FILLED,
     /// and false otherwise.
@@ -173,7 +182,9 @@ impl Dla {
 
         for (nx, ny) in neighbors.iter() {
             // make sure the neighbor is a valid point on our grid
-            if self.valid_grid_pos((*nx, *ny)) && self.grid.filled(self.get_idx(*nx as usize, *ny as usize)) {
+            if self.valid_grid_pos((*nx, *ny))
+                && self.grid.filled(self.get_idx(*nx as usize, *ny as usize))
+            {
                 return true;
             }
         }
@@ -186,10 +197,10 @@ impl Dla {
     }
 
     fn valid_grid_pos(&self, pos: (isize, isize)) -> bool {
-        pos.0 < self.grid.width as isize 
-        && pos.0 >= 0
-        && pos.1 < self.grid.height as isize
-        && pos.1 >= 0
+        pos.0 < self.grid.width as isize
+            && pos.0 >= 0
+            && pos.1 < self.grid.height as isize
+            && pos.1 >= 0
     }
 
     //// Return the filled value of the cell at position (x, y). Returns false if 'pos' isn't a valid grid pos
@@ -203,29 +214,37 @@ impl Dla {
         }
     }
 
-    /// Get neighbors. They aren't necessarily all valid grid positions 
-    fn get_neighbors(&self, x: usize, y:usize) -> [(isize, isize); 8] {
+    /// Get neighbors. They aren't necessarily all valid grid positions
+    fn get_neighbors(&self, x: usize, y: usize) -> [(isize, isize); 8] {
         let tx: isize = x.try_into().unwrap();
         let ty: isize = y.try_into().unwrap();
 
-        [(tx-1, ty-1), (tx, ty-1), (tx+1, ty-1),
-         (tx-1, ty),               (tx+1, ty),
-         (tx-1, ty+1), (tx, ty+1), (tx+1, ty+1) 
+        [
+            (tx - 1, ty - 1),
+            (tx, ty - 1),
+            (tx + 1, ty - 1),
+            (tx - 1, ty),
+            (tx + 1, ty),
+            (tx - 1, ty + 1),
+            (tx, ty + 1),
+            (tx + 1, ty + 1),
         ]
     }
 
     /// Given a particle at (x, y), return its new position after it moves randomly to one of its
     /// (unfilled) neighbors
-    /// 
+    ///
     /// This function will always return a valid position in the grid
     fn random_walk(&mut self, x: usize, y: usize) -> (usize, usize) {
         // build a vector of possible neighbors
         // randomly pick from the vector accordingly
         let neighbors = self.get_neighbors(x, y);
-        
+
         let mut valid_neighbors = Vec::new();
         for (nx, ny) in neighbors.iter() {
-            if self.valid_grid_pos((*nx, *ny)) && !self.grid.filled(self.get_idx(*nx as usize, *ny as usize)){
+            if self.valid_grid_pos((*nx, *ny))
+                && !self.grid.filled(self.get_idx(*nx as usize, *ny as usize))
+            {
                 valid_neighbors.push((nx, ny));
             }
         }
@@ -237,7 +256,10 @@ impl Dla {
 
         let neighbor_idx = thread_rng().gen_range(0..num_neighbors);
 
-        (*valid_neighbors[neighbor_idx].0 as usize, *valid_neighbors[neighbor_idx].1 as usize)
+        (
+            *valid_neighbors[neighbor_idx].0 as usize,
+            *valid_neighbors[neighbor_idx].1 as usize,
+        )
     }
 
     fn flush_stdout() {
@@ -246,13 +268,14 @@ impl Dla {
     }
 
     /// Iterates once on the current grid
-    /// 
+    ///
     /// If there's an active particle, move it one step in its random walk
     /// If there's no active particle (the last one stuck), spawn one at a random (unpopulated) location
     /// Check if the particle we added stuck
     /// Mark the simulation complete if we've reached the desired number of particles
     pub fn update(&mut self) {
-        if self.is_complete { // don't let this run if the sim is complete
+        if self.is_complete {
+            // don't let this run if the sim is complete
             return;
         }
 
@@ -271,7 +294,10 @@ impl Dla {
         } else {
             // spawn a new particle at a random location
             let (startx, starty) = self.random_loc();
-            self.cur_part = Particle { exists: true, pos: (startx, starty)};
+            self.cur_part = Particle {
+                exists: true,
+                pos: (startx, starty),
+            };
         }
 
         // we either moved, or spawned. In both cases we need to update our state if the particle should stick.
@@ -312,7 +338,7 @@ impl Dla {
                 let idx = if bucket_size == 0 {
                     0 // avoid divide by 0 if we don't have any stuck particles yet
                 } else {
-                    let tmp = (id / bucket_size) as usize;
+                    let tmp = id / bucket_size;
                     // dividing by 10 to get bucket size is imprecise. It won't divide perfectly, so some particles will
                     // be outside the range. We put them in the last bucket. For ex. Particle 100/100 will map to index 10
                     // when it should be 9.
@@ -340,10 +366,10 @@ impl Dla {
         }
     }
     /// Returns a valid (empty) spawn location for a new particle.
-    /// 
+    ///
     /// The location can be directly adjacent to another particle, meaning a particle spawning at this
     /// location will stick instantly.
-    /// 
+    ///
     /// If it can't find a valid spawn location and reaches the retry limit (1000), will mark the simulation as complete
     /// and return a point that was already filled.
     fn random_loc(&mut self) -> (usize, usize) {
@@ -387,9 +413,7 @@ impl Dla {
     /// Return avg updates/sec
     #[allow(dead_code)]
     pub fn benchmark() {
-        println!("{}",
-                 format!("Running benchmark...").bold().yellow()
-        );
+        println!("{}", "Running benchmark...".to_string().bold().yellow());
         let iterations = 10;
         let mut updates_vec = Vec::new();
         for i in 0..iterations {
@@ -399,30 +423,32 @@ impl Dla {
             let elapsed = now.elapsed().as_secs();
             updates_vec.push((sim.updates / elapsed) as u32);
 
-            print!("\r{}{}{}{}",
-                   format!("Finished iteration: ").bold().blue(),
-                   format!("{}", i+1).green(),
-                   format!(" of ").bold().blue(),
-                   format!("{}", iterations).green()
+            print!(
+                "\r{}{}{}{}",
+                "Finished iteration: ".to_string().bold().blue(),
+                format!("{}", i + 1).green(),
+                " of ".to_string().bold().blue(),
+                format!("{}", iterations).green()
             );
             Self::flush_stdout();
         }
-        assert!(updates_vec.len() > 0);
+        assert!(!updates_vec.is_empty());
         let avg = updates_vec.iter().sum::<u32>() / updates_vec.len() as u32;
         let avg_str = avg.separate_with_commas();
-        println!("\n{}{}",
-                 format!("Average updates/sec was: ").bold().blue(),
-                 format!("{}", avg_str).green()
+        println!(
+            "\n{}{}",
+            "Average updates/sec was: ".to_string().bold().blue(),
+            avg_str.green()
         );
     }
 
     pub fn spawn_worker_thread(shared_data: &Arc<Mutex<Dla>>) {
         debug!("worker thread spawning");
-        let run_thread_grid = Arc::clone(&shared_data);
+        let run_thread_grid = Arc::clone(shared_data);
         let _handle = thread::spawn(move || {
             loop {
                 let mut guard_data = run_thread_grid.lock().unwrap();
-                if !guard_data.paused && !guard_data.is_complete{
+                if !guard_data.paused && !guard_data.is_complete {
                     // getting about 60-80fps with this method.
                     // should be slightly more efficient in the backend since we're not using the lock as much
                     for _ in 0..10 {
@@ -484,27 +510,27 @@ impl Dla {
     }
 
     pub fn handle_particles_changed(&mut self, particles: usize) {
-            // check some basic assumptions about when this could be called
-            assert!(self.paused || self.is_complete);
+        // check some basic assumptions about when this could be called
+        assert!(self.paused || self.is_complete);
 
-            // based on dynamic clamping in the gui, get_particles() should always give us a number in
-            // [stuck_particles, width*height]
-            if self.particles != particles {
-                // only update self if something changed
+        // based on dynamic clamping in the gui, get_particles() should always give us a number in
+        // [stuck_particles, width*height]
+        if self.particles != particles {
+            // only update self if something changed
 
-                if self.is_complete && self.particles < particles {
-                    // if we were complete, but particles increased, mark as not complete but paused.
-                    // this happens if the user changed the desired number of particles
-                    self.is_complete = false;
-                    self.paused = true;
-                } else if self.stuck_particles == particles {
-                    // this happens if the user changed (decreased) the desired number of particles 
-                    // to match however many are already spawned
-                    self.is_complete = true;
-                }
-                // always update particles to reflect what the gui has told us to use
-                self.particles = particles;
+            if self.is_complete && self.particles < particles {
+                // if we were complete, but particles increased, mark as not complete but paused.
+                // this happens if the user changed the desired number of particles
+                self.is_complete = false;
+                self.paused = true;
+            } else if self.stuck_particles == particles {
+                // this happens if the user changed (decreased) the desired number of particles
+                // to match however many are already spawned
+                self.is_complete = true;
             }
+            // always update particles to reflect what the gui has told us to use
+            self.particles = particles;
+        }
     }
 
     pub fn handle_grid_type_selected(&mut self, new_grid_type: GridType) {
@@ -517,7 +543,8 @@ impl Dla {
         } else {
             UNPAUSE_BUTTON_TEXT
         };
-        if text != text_should_be { // text should be the opposite of our current state
+        if text != text_should_be {
+            // text should be the opposite of our current state
             panic!("Application state is out of sync with GUI! (start/stop button)");
         }
         self.paused = !self.paused;
@@ -544,9 +571,7 @@ impl Dla {
         }
 
         // count the stuck particles in the grid we read in
-        self.stuck_particles = self.grid.cells.iter()
-                                              .filter(|&n| n.filled)
-                                              .count();
+        self.stuck_particles = self.grid.cells.iter().filter(|&n| n.filled).count();
 
         // particles: same as stuck particles since we're marking as complete
         self.particles = self.stuck_particles;
@@ -567,15 +592,15 @@ impl Dla {
 
     /// A reset is just a grid type swap with a grid of the same type
     pub fn handle_reset(&mut self, width: u32, height: u32) {
-        let height_option = if width != self.grid.width as u32 
-                            || height != self.grid.height as u32 {
-                // size changed 
-                self.do_resize = true; // the event loop will handle this when it loops back around
-                Some((width, height))
-            } else {
-                // no size change
-                None
-            };
+        let height_option = if width != self.grid.width as u32 || height != self.grid.height as u32
+        {
+            // size changed
+            self.do_resize = true; // the event loop will handle this when it loops back around
+            Some((width, height))
+        } else {
+            // no size change
+            None
+        };
         self.swap_grid_type(self.grid_type, height_option);
     }
 }

@@ -41,21 +41,21 @@ jobs:
         name: rudget-${{ matrix.target }}
         path: ./target/${{ matrix.target }}/release/* 
   
-  # release:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Download artifacts
-  #     uses: actions/download-artifact@v2
-  #     with:
-  #       path: ./artifacts/
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: ./artifacts/
       
-  #   - name: Create GitHub Release
-  #     uses: gh-actions/github-release@v1.1
-  #     with:
-  #       api_key: ${{ secrets.GITHUB_TOKEN }}
-  #       name: Release ${{ github.ref }}
-  #       tag_name: ${{ github.ref }}
-  #       file: ./artifacts/*
-  #       overwrite: true
+    - name: Create GitHub Release
+      uses: gh-actions/github-release@v1.1
+      with:
+        api_key: ${{ secrets.GITHUB_TOKEN }}
+        name: Release ${{ github.ref }}
+        tag_name: ${{ github.ref }}
+        file: ./artifacts/*
+        overwrite: true
 

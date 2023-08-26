@@ -23,7 +23,7 @@ fn main() {
     #[cfg(target_arch = "wasm32")]
     {
         std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        //console_log::init_with_level(log::Level::Trace).expect("error initializing logger");
+        console_log::init_with_level(log::Level::Trace).expect("error initializing logger");
 
         wasm_bindgen_futures::spawn_local(run());
     }

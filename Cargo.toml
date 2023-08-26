@@ -63,10 +63,5 @@ wgpu = { version = "0.14", features = ["webgl"] }
 env_logger = "0.10"
 pollster = "0.2"
 
-[workspace] 
-members = [
-    "run-wasm"
-]
-
 [package.metadata.web]
 template = "index.html.template"

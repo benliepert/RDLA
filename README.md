@@ -18,8 +18,8 @@ The core algorithm is simple:
 In this simulator, DLA is modeled on a 2d space in [Rust](https://github.com/rust-lang/rust) using a [Pixels](https://github.com/parasyte/pixels) frame buffer and [egui](https://github.com/emilk/egui) GUI.
 
 # How To Run
-Visit [benliepert.github.io](https://benliepert.github.io) for a version (generated with [run-wasm](https://github.com/rukai/cargo-run-wasm)) that runs in your browser.\
-Or you can build and run the standalone app by using `cargo run` at the root of this repo.
+Visit [benliepert.github.io/RDLA](https://benliepert.github.io/RDLA) for a version (generated with [trunk](https://github.com/thedodd/trunk)) that runs in your browser.\
+Or you can build and run the standalone app by using `cargo run --release` at the root of this repo.
 
 ## Acknowledgments
 Thanks [@parasyte](https://github.com/parasyte) for your [Conway's Game of Life](https://github.com/parasyte/pixels/tree/main/examples/conway), [Minimal Egui](https://github.com/parasyte/pixels/tree/main/examples/minimal-egui), and [Minimal Web](https://github.com/parasyte/pixels/tree/main/examples/minimal-web) examples!

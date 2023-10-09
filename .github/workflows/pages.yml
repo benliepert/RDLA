@@ -4,7 +4,7 @@ name: Github Pages
 on:
   push:
     branches:
-      - convert_to_trunk_build
+      - master
 # to only run when you do a new github release, comment out above part and uncomment the below trigger.
 # on:
 #   release:

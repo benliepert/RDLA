@@ -388,6 +388,7 @@ impl Gui {
                 });
 
                 // GRID SIZE SPIN BOX ------------
+                #[cfg(not(target_arch = "wasm32"))]
                 ui.horizontal(|ui| {
                     ui.label("Grid Size:");
                     ui.add_enabled_ui(self.paused || self.complete, |ui| {
